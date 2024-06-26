@@ -1,0 +1,147 @@
+-- select * 
+-- from WorldlifeExpectancy
+
+-- SELECT country, year, CONCAT(country,year), COUNT(CONCAT(country,year))
+-- from WorldlifeExpectancy
+-- group by country, year, CONCAT(country,year)
+-- having COUNT(CONCAT(country,year))>1 
+
+
+
+-- SELECT Row_ID, CONCAT(country,year),
+-- row_number() OVER(partition by CONCAT(country,year) order by CONCAT(country,year)) as rownum
+-- from WorldlifeExpectancy
+
+-- select *
+-- FROM(
+-- SELECT Row_ID, CONCAT(country,year) as c1,
+-- row_number() OVER(partition by CONCAT(country,year) order by CONCAT(country,year)) as rownum
+-- from WorldlifeExpectancy
+-- ) as rowtable
+-- where rownum>1
+
+
+/***delete from a temp table**/
+-- with cte as (
+--     SELECT Row_ID, CONCAT(country,year) as c1,
+--     row_number() OVER(partition by CONCAT(country,year) order by CONCAT(country,year)) as rownum
+--     from WorldlifeExpectancy
+-- -- )
+
+/***------delete from the original table----**/
+-- delete from WorldlifeExpectancy
+-- where Row_ID IN (
+--     select Row_ID 
+-- FROM (
+--     SELECT Row_ID, 
+--     CONCAT(country,year) as c1,
+--     row_number() OVER(partition by CONCAT(country,year) order by CONCAT(country,year)) as rownum
+--     from WorldlifeExpectancy
+--     ) as rowtable
+-- where rownum>1
+-- )
+
+
+
+
+
+
+
+/**-----populated the value into blank------*****/
+
+-- select * FROM WorldlifeExpectancy
+-- where [Status]='' or [Status] is null
+
+-- select distinct [Status]
+-- from WorldlifeExpectancy
+-- where [Status]<> '' or [Status] is not NULL
+
+
+
+ 
+-- select distinct (CAST (country AS nvarchar(max))) from WorldlifeExpectancy
+-- where Status='Developing'
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+-- ALTER TABLE  WorldlifeExpectancy.dbo.WorldlifeExpectancy 
+-- ALTER COLUMN Country nvarchar(max) NULL
+
+
+
+/**-----populated the value into blank------*****/
+
+-- update WorldlifeExpectancy
+-- set [Status]='Developing'
+-- where Country in (
+--     select distinct country from WorldlifeExpectancy
+--     where [Status]='Developing'
+-- )
+
+/**-----populated the developed value into blank------*****/
+-- update WorldlifeExpectancy
+-- set [Status]='Developed'
+-- where Country in (
+--     select distinct country from WorldlifeExpectancy
+--     where [Status]='Developed'
+-- )
+
+-----to check if no more empty 
+-- select * FROM WorldlifeExpectancy
+-- where [Status]='' or [Status] is null
+
+
+/*****-------remove null from life expectancy column------******/
+-- select * 
+-- from WorldlifeExpectancy
+-- where Life_expectancy = '' or Life_expectancy is null
+
+-- select * 
+-- from WorldlifeExpectancy
+
+/*****------错位相加 相减法 求平均值-------******/
+-- select w1.Country, w1.[Year], w1.Life_expectancy,
+-- w2.Country, w2.[Year],w2.Life_expectancy,
+-- w3.Country, w3.[Year],w3.Life_expectancy
+-- from WorldlifeExpectancy w1
+-- join WorldlifeExpectancy w2
+--     on w1.Country=w2.Country
+--     and w1.Year=w2.Year-1
+--     join WorldlifeExpectancy w3
+--         on w1.Country=w3.Country
+--         and w1.[Year]=w3.[Year]+1
+
+
+---------------change life_expectancy into FLOAT
+
+-- ALTER TABLE  WorldlifeExpectancy.dbo.WorldlifeExpectancy 
+-- ALTER COLUMN life_expectancy FLOAT NULL
+
+select w1.Country, w1.[Year], w1.Life_expectancy,
+w2.Country, w2.[Year],w2.Life_expectancy,
+w3.Country, w3.[Year],w3.Life_expectancy,
+round((w2.Life_expectancy+w3.Life_expectancy)/2,1)
+from WorldlifeExpectancy w1
+join WorldlifeExpectancy w2
+    on w1.Country=w2.Country
+    and w1.Year=w2.Year-1
+    join WorldlifeExpectancy w3
+        on w1.Country=w3.Country
+        and w1.[Year]=w3.[Year]+1
+where w1.Life_expectancy='' or w1.Life_expectancy is null
+
+
+update WorldlifeExpectancy w1
+join WorldlifeExpectancy w2
+    on w1.Country=w2.Country
+    and w1.Year=w2.Year-1
+    join WorldlifeExpectancy w3
+        on w1.Country=w3.Country
+        and w1.[Year]=w3.[Year]+1
+where w1.Life_expectancy='' or w1.Life_expectancy is null
+
+set 
