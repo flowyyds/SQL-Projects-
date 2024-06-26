@@ -144,4 +144,4 @@ join WorldlifeExpectancy w2
         and w1.[Year]=w3.[Year]+1
 where w1.Life_expectancy='' or w1.Life_expectancy is null
 
-set 
+
