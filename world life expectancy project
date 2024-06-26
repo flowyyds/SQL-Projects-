@@ -165,3 +165,22 @@ set Life_expectancy = c1 from vvv
 where Life_expectancy='' or Life_expectancy is null
 
 
+
+------------------- exploratory data analysis
+
+select Country, MIN(Life_expectancy) as min_length, 
+MAX(Life_expectancy) as max_length,
+round(MAX(Life_expectancy)-MIN(Life_expectancy),1) as life_increase_15_years
+from WorldlifeExpectancy
+group by Country
+order by life_increase_15_years DESC
+
+select Country, MIN(Life_expectancy) as min_length, 
+MAX(Life_expectancy) as max_length,
+round(MAX(Life_expectancy)-MIN(Life_expectancy),1) as life_increase_15_years
+from WorldlifeExpectancy
+group by Country
+order by life_increase_15_years ASC
+
+
+
