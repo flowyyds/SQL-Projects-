@@ -144,4 +144,24 @@ join WorldlifeExpectancy w2
         and w1.[Year]=w3.[Year]+1
 where w1.Life_expectancy='' or w1.Life_expectancy is null
 
+                                                                      error #4 - 我用了之前的alex的方法单纯去update table，
+                                                                      w1,w2 这种alias一直在报错，我试了下用cte 可以实现相同的效果
+
+with vvv as (
+    select w1.Country, 
+round((w2.Life_expectancy+w3.Life_expectancy)/2,1) as c1
+from WorldlifeExpectancy w1
+join WorldlifeExpectancy w2
+    on w1.Country=w2.Country
+    and w1.Year=w2.Year-1
+    join WorldlifeExpectancy w3
+        on w1.Country=w3.Country
+        and w1.[Year]=w3.[Year]+1
+-- where w1.Life_expectancy='' or w1.Life_expectancy is null
+)
+
+update WorldlifeExpectancy
+set Life_expectancy = c1 from vvv
+where Life_expectancy='' or Life_expectancy is null
+
 
