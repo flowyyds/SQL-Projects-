@@ -1,0 +1,317 @@
+-- select * 
+-- from WorldlifeExpectancy
+
+-- SELECT country, year, CONCAT(country,year), COUNT(CONCAT(country,year))
+-- from WorldlifeExpectancy
+-- group by country, year, CONCAT(country,year)
+-- having COUNT(CONCAT(country,year))>1 
+
+
+
+-- SELECT Row_ID, CONCAT(country,year),
+-- row_number() OVER(partition by CONCAT(country,year) order by CONCAT(country,year)) as rownum
+-- from WorldlifeExpectancy
+
+-- select *
+-- FROM(
+-- SELECT Row_ID, CONCAT(country,year) as c1,
+-- row_number() OVER(partition by CONCAT(country,year) order by CONCAT(country,year)) as rownum
+-- from WorldlifeExpectancy
+-- ) as rowtable
+-- where rownum>1
+
+
+/***delete from a temp table**/
+-- with cte as (
+--     SELECT Row_ID, CONCAT(country,year) as c1,
+--     row_number() OVER(partition by CONCAT(country,year) order by CONCAT(country,year)) as rownum
+--     from WorldlifeExpectancy
+-- -- )
+
+/***------delete from the original table----**/
+-- delete from WorldlifeExpectancy
+-- where Row_ID IN (
+--     select Row_ID 
+-- FROM (
+--     SELECT Row_ID, 
+--     CONCAT(country,year) as c1,
+--     row_number() OVER(partition by CONCAT(country,year) order by CONCAT(country,year)) as rownum
+--     from WorldlifeExpectancy
+--     ) as rowtable
+-- where rownum>1
+-- )
+
+
+
+
+
+
+
+/**-----populated the value into blank------*****/
+
+-- select * FROM WorldlifeExpectancy
+-- where [Status]='' or [Status] is null
+
+-- select distinct [Status]
+-- from WorldlifeExpectancy
+-- where [Status]<> '' or [Status] is not NULL
+
+
+
+ 
+-- select distinct (CAST (country AS nvarchar(max))) from WorldlifeExpectancy
+-- where Status='Developing'
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+-- ALTER TABLE  WorldlifeExpectancy.dbo.WorldlifeExpectancy 
+-- ALTER COLUMN Country nvarchar(max) NULL
+
+
+
+/**-----populated the value into blank------*****/
+
+-- update WorldlifeExpectancy
+-- set [Status]='Developing'
+-- where Country in (
+--     select distinct country from WorldlifeExpectancy
+--     where [Status]='Developing'
+-- )
+
+/**-----populated the developed value into blank------*****/
+-- update WorldlifeExpectancy
+-- set [Status]='Developed'
+-- where Country in (
+--     select distinct country from WorldlifeExpectancy
+--     where [Status]='Developed'
+-- )
+
+-----to check if no more empty 
+-- select * FROM WorldlifeExpectancy
+-- where [Status]='' or [Status] is null
+
+
+/*****-------remove null from life expectancy column------******/
+-- select * 
+-- from WorldlifeExpectancy
+-- where Life_expectancy = '' or Life_expectancy is null
+
+-- select * 
+-- from WorldlifeExpectancy
+
+/*****------错位相加 相减法 求平均值-------******/
+-- select w1.Country, w1.[Year], w1.Life_expectancy,
+-- w2.Country, w2.[Year],w2.Life_expectancy,
+-- w3.Country, w3.[Year],w3.Life_expectancy
+-- from WorldlifeExpectancy w1
+-- join WorldlifeExpectancy w2
+--     on w1.Country=w2.Country
+--     and w1.Year=w2.Year-1
+--     join WorldlifeExpectancy w3
+--         on w1.Country=w3.Country
+--         and w1.[Year]=w3.[Year]+1
+
+
+---------------change life_expectancy into FLOAT
+
+-- ALTER TABLE  WorldlifeExpectancy.dbo.WorldlifeExpectancy 
+-- ALTER COLUMN life_expectancy FLOAT NULL
+
+
+-- select w1.Country, w1.[Year], w1.Life_expectancy,
+-- w2.Country, w2.[Year],w2.Life_expectancy,
+-- w3.Country, w3.[Year],w3.Life_expectancy,
+-- round((w2.Life_expectancy+w3.Life_expectancy)/2,1) as c1
+-- from WorldlifeExpectancy w1
+-- join WorldlifeExpectancy w2
+--     on w1.Country=w2.Country
+--     and w1.Year=w2.Year-1
+--     join WorldlifeExpectancy w3
+--         on w1.Country=w3.Country
+--         and w1.[Year]=w3.[Year]+1
+-- where w1.Life_expectancy='' or w1.Life_expectancy is null
+
+
+
+/**********-----populate values into the null of life expectancy -----**********/
+
+-- update  WorldLifeExpectancy w1
+-- join WorldLifeExpectancy w2
+--         on w1.Country=w2.Country
+--         and w1.[Year]=w2.[Year]-1
+--     join WorldLifeExpectancy w3
+--             on w1.Country=w3.Country
+--             and w1.[Year]=w3.[Year]+1
+
+-- set w1.Life_expectancy = round((w2.Life_expectancy+w3.Life_expectancy)/2,1)   
+-- where w1.Life_expectancy='' or w1.Life_expectancy is NULL
+
+
+
+----- Question, how to update a specific value from a certain column?
+
+-- update  WorldLifeExpectancy w1
+--     join WorldLifeExpectancy w2
+--     on w1.Country = w2.Country
+--     and w1.Year = w2.Year-1 
+--     join WorldLifeExpectancy  w3
+--         on w1.Country=w3.Country
+--         and w1.[Year]=w3.[Year]+1 
+-- set w1.Life_expectancy = round((w2.Life_expectancy+w3.Life_expectancy)/2,1) 
+-- where w1.Life_expectancy='' and w1.Life_expectancy is NULL
+
+
+
+  
+
+
+
+-----------检查还有没有空值
+-- select Country, [Year], Life_expectancy
+-- from WorldlifeExpectancy
+-- where Life_expectancy='' or Life_expectancy is null 
+
+
+
+/**********-----populate values into the null of life expectancy -----**********/
+
+-----------------------之前的方法没有成功 于是乎用 cte 套更新的值， 利用sql默认的asc顺序，更新了原本系统的表格
+                                -- with vvv as (
+                                --     select w1.Country, 
+                                -- round((w2.Life_expectancy+w3.Life_expectancy)/2,1) as c1
+                                -- from WorldlifeExpectancy w1
+                                -- join WorldlifeExpectancy w2
+                                --     on w1.Country=w2.Country
+                                --     and w1.Year=w2.Year-1
+                                --     join WorldlifeExpectancy w3
+                                --         on w1.Country=w3.Country
+                                --         and w1.[Year]=w3.[Year]+1
+                                -- -- where w1.Life_expectancy='' or w1.Life_expectancy is null
+                                -- )
+
+                                -- update WorldlifeExpectancy
+                                -- set Life_expectancy = c1 from vvv
+                                -- where Life_expectancy='' or Life_expectancy is null
+
+
+-----------检查还有没有空值
+                                            -- select * 
+                                            -- from WorldlifeExpectancy
+                                            -- where Life_expectancy = '' or Life_expectancy is null
+
+-- ----------------- exploratory data analysis
+
+-- select Country, MIN(Life_expectancy) as min_length, 
+-- MAX(Life_expectancy) as max_length,
+-- round(MAX(Life_expectancy)-MIN(Life_expectancy),1) as life_increase_15_years
+-- from WorldlifeExpectancy
+-- group by Country
+-- order by life_increase_15_years DESC
+
+-- select Country, MIN(Life_expectancy) as min_length, 
+-- MAX(Life_expectancy) as max_length,
+-- round(MAX(Life_expectancy)-MIN(Life_expectancy),1) as life_increase_15_years
+-- from WorldlifeExpectancy
+-- group by Country
+-- order by life_increase_15_years ASC
+
+
+-- select [Year], round(AVG(Life_expectancy),2)
+-- from WorldlifeExpectancy
+-- where Life_expectancy <> '0'
+-- group by [Year]
+-- ORDER by [Year]
+
+-- ---------SQL correlation function 
+
+-- ALTER TABLE  WorldlifeExpectancy.dbo.WorldlifeExpectancy 
+-- ALTER COLUMN GDP FLOAT NULL
+
+-- ------------------求平均年龄 平均gdp
+-- select Country, round(AVG(Life_expectancy),1) as life_exp, round(AVG(GDP),1) as DGP
+-- from WorldLifeExpectancy
+-- group by Country
+-- order by life_exp
+
+-- select Country, round(AVG(Life_expectancy),1), round(AVG(GDP),1) as GDP 
+-- from WorldLifeExpectancy
+-- group by Country
+-- order by GDP ASC
+
+
+-- ------------求均值
+-- select  round(AVG(Life_expectancy),1), round(AVG(GDP),1)
+-- from WorldLifeExpectancy
+
+-- -------------按国家求均值
+-- select country,round(AVG(Life_expectancy),1),round(AVG(GDP),1)
+-- from WorldLifeExpectancy
+-- group by Country
+-- having round(AVG(GDP),1)>0
+-- order by round(AVG(GDP),1) ASC
+
+-- -----------按国家分类 求寿命&GDP都大于均值的国家
+-- select country,round(AVG(Life_expectancy),1),round(AVG(GDP),1)
+-- from WorldLifeExpectancy
+-- group by Country
+-- having round(AVG(GDP),1)>6432.1 and round(AVG(Life_expectancy),1)>69
+-- order by round(AVG(GDP),1) ASC
+
+-- -----------按国家分类 求寿命&GDP都 小于 均值的国家（要大于零，寿命或gdp=0的 很有可能是 dirty data）
+-- select country,round(AVG(Life_expectancy),1),round(AVG(GDP),1)
+-- from WorldLifeExpectancy
+-- group by Country
+-- having round(AVG(GDP),1)<6432.1 and round(AVG(Life_expectancy),1)<69 
+-- and round(AVG(GDP),1) is not null and round(AVG(GDP),1)<>''
+-- order by round(AVG(GDP),1) DESC
+
+
+
+-- ----------------gdp都大于1500 国家人均寿命 & gdp都小于1500 国家人均寿命 对比
+-- select 
+-- SUM(case when GDP >=1500 then 1 else 0  end ) high_GDP_count,
+-- AVG(case when GDP >=1500 then Life_expectancy else null end ) high_GDP_life_exp,
+-- SUM(case when GDP <1500 then 1 else 0  end ) low_GDP_count,
+-- AVG(case when GDP <1500 then Life_expectancy else null end ) low_GDP_life_exp
+-- from WorldLifeExpectancy
+
+-- ------------- explore Status and life_expectancy
+-- select [Status], round(AVG(Life_expectancy),1) as life_exp
+-- from WorldLifeExpectancy
+-- GROUP BY [Status]
+
+-- ---------------- 看看发展中国家发达国家 人均寿命
+-- select [Status], COUNT(distinct Country) as country_status, round(AVG(Life_expectancy),1) as life_exp
+-- from WorldLifeExpectancy
+-- GROUP BY [Status]
+
+
+-- ----------------看看发达国家 发展中国家 BMI 关系
+
+-- --------------------先换一下data type
+-- ALTER TABLE  WorldlifeExpectancy.dbo.WorldlifeExpectancy 
+-- ALTER COLUMN BMI float NULL
+
+
+-- ----------------看看发达国家 发展中国家 BMI 关系
+-- select country,round(AVG(Life_expectancy),1) as life_exp, round(AVG(BMI),1) as avg_BMI
+-- from WorldLifeExpectancy
+-- group by [Country]
+-- having round(AVG(BMI),1)>0 and round(AVG(Life_expectancy),1)>0
+-- order by round(AVG(BMI),1) DESC
+
+-- ----------------- 成年人 rowing total
+
+-- ALTER TABLE  WorldlifeExpectancy.dbo.WorldlifeExpectancy 
+-- ALTER COLUMN Adult_Mortality int NULL
+
+-- select Country, [Year],Life_expectancy, 
+-- SUM(Adult_Mortality) over (partition by Country order by [Year]) as rowing_total
+-- from WorldLifeExpectancy
+-- where Country like 'United%'
+
+
