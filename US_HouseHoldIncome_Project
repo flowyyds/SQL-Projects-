@@ -1,0 +1,279 @@
+select *
+from USHouseholdIncome
+
+
+select * from USHouseholdIncome_Statistics
+
+
+----------------------先横向对比一下 两个数据是否一样
+select COUNT(id)
+from USHouseholdIncome
+
+select COUNT(id)
+from USHouseholdIncome_Statistics
+
+----------------------老样子 先检查是否有duplicates
+-------------------------检查dup 方法一
+select id, COUNT(id) over (PARTITION by id order by id) as dup
+from USHouseholdIncome
+GROUP by id
+having COUNT(id)>1
+
+-------------------------检查dup 方法二
+with id_dup as(
+    select id, row_id, 
+row_number() over (PARTITION by id order by id) as dup
+from USHouseholdIncome
+
+)
+select * from id_dup
+where dup >1
+
+---------------- 类似CTE但是不太一样 
+select id
+from(
+   select id, row_id, 
+row_number() over (PARTITION by id order by id) as dup
+from USHouseholdIncome
+)  as rowtable
+where dup >1
+
+
+----------------------delete all the duplicates
+
+delete from USHouseholdIncome
+where row_id IN
+(
+    select row_id
+    from(
+    select id, row_id, 
+        row_number() over (PARTITION by id order by id) as dup
+        from USHouseholdIncome
+    )  as rowtable
+where dup >1
+)
+
+-------------------check again if no more dups
+with id_dup as(
+    select id, row_id, 
+row_number() over (PARTITION by id order by id) as dup
+from USHouseholdIncome
+
+)
+select * from id_dup
+where dup >1
+
+
+-------------------检查有没有拼写错误
+select DISTINCT state_Name, count(state_Name)
+from USHouseholdIncome
+GROUP BY state_Name
+order by 1
+
+
+-------------------更改拼写错误 georia
+UPDATE USHouseholdIncome
+set state_name = 'Georgia'
+where state_name = 'georia'
+
+-------------------更改拼写错误 alabama
+UPDATE USHouseholdIncome
+set state_name = 'Alabama'
+where state_name = 'alabama'
+
+----------------------- 检查place 是否有dirtydata
+
+select *
+from USHouseholdIncome
+where Place='' or place is null
+
+
+select *
+from USHouseholdIncome
+where county= 'Autauga County' 
+order by 1
+
+
+
+-------------------------------更新place 列 空白值（populate values into null or blank cells ）
+update USHouseholdIncome
+set place = 'Autaugaville'
+where county= 'Autauga County' and place ='' or place is null
+
+
+----------------------检查type column
+select *
+from USHouseholdIncome
+where Type='' or Type is null
+
+select Type, COUNT(Type)
+from USHouseholdIncome
+Group BY Type 
+order BY 1
+
+update USHouseholdIncome
+set Type='Borough'
+where  Type = 'Boroughs'
+
+----------------------检查aland awater column aka-有没有哪个county 只有land 或者只有water
+select Aland, Awater
+from USHouseholdIncome
+where (Awater=0 or Awater is null or Awater ='')
+and (Aland=0 or Aland is null or Aland ='')
+
+----------------so there is no both null value in aland and awater.
+
+
+
+----------------------------/********-----PART 2 EDA------*******/----------------------------------
+
+
+-- select * from USHouseholdIncome_Statistics
+
+-----------------哪个州有最大的土地
+select state_name, SUM(ALand) as state_land, SUM(Awater) as state_water
+from USHouseholdIncome
+group by state_name
+order by 2 DESC
+
+-----------------哪个州有最多的水
+select state_name, SUM(ALand) as state_land, SUM(Awater) as state_water
+from USHouseholdIncome
+group by state_name
+order by 3 DESC
+
+---------------top 10 largest states by land
+/*****----MSSQL 不能用 limit 可以用 top 10 替代 ----*****/
+select top 10 state_name, SUM(ALand) as state_land, SUM(Awater) as state_water
+from USHouseholdIncome
+group by state_name
+order by 2 DESC
+
+select top 10 state_name, SUM(ALand) as state_land, SUM(Awater) as state_water
+from USHouseholdIncome
+group by state_name
+order by 3 DESC
+
+
+
+--------------------- 将两个table link 起来
+select * 
+from USHouseholdIncome u
+RIGHT Join USHouseholdIncome_Statistics us
+on u.id = us.id
+where u.id ='' or u.id is null or u.id='0'
+
+----------------------- select where mean is not 0
+select * 
+from USHouseholdIncome u
+INNER Join USHouseholdIncome_Statistics us
+on u.id = us.id
+where mean <>'0'
+
+
+------------------找到两个表格 有共性的 地方
+select * 
+from USHouseholdIncome u
+INNER Join USHouseholdIncome_Statistics us
+on u.id = us.id
+where mean <>'0'
+
+-------------------选出 高收入人群 按州分类， 选出top 10
+select top 10 u.state_name,AVG(mean) as income_mean , avg(median) as income_median
+from USHouseholdIncome u
+INNER Join USHouseholdIncome_Statistics us
+on u.id = us.id
+where mean <>'0'
+group by u.state_name
+order by 2 DESC
+
+select top 10 u.state_name,AVG(mean) as income_mean , avg(median) as income_median
+from USHouseholdIncome u
+INNER Join USHouseholdIncome_Statistics us
+on u.id = us.id
+where mean <>'0'
+group by u.state_name
+order by 2 DESC
+
+
+-----------------------看下按居住区域 收入分类
+ALTER TABLE  USHouseholdIncome_Statistics
+ALTER COLUMN Mean Bigint NULL
+
+ALTER TABLE  USHouseholdIncome_Statistics
+ALTER COLUMN Median Bigint NULL
+
+select top 10 Type,  AVG(mean) as income_mean , avg(median) as income_median
+from USHouseholdIncome u
+INNER Join USHouseholdIncome_Statistics us
+on u.id = us.id
+where mean <>'0'
+group by Type
+order by 2 DESC
+
+-------------------用count(Type)排序之后  Municipality从榜消失了，(因为限制了top 10)
+select top 10 Type, count(Type) as type_total, AVG(mean) as income_mean , avg(median) as income_median
+from USHouseholdIncome u
+INNER Join USHouseholdIncome_Statistics us
+on u.id = us.id
+where mean <>'0'
+group by Type
+order by 2 DESC
+
+------------------改成 top 20  Municipality出现了
+select top 20 Type, count(Type) as type_total, AVG(mean) as income_mean , avg(median) as income_median
+from USHouseholdIncome u
+INNER Join USHouseholdIncome_Statistics us
+on u.id = us.id
+where mean <>'0'
+group by Type
+order by 2 DESC
+
+
+-------------------看看那里收入最低，选出
+select top 20 Type, count(Type) as type_total, AVG(mean) as income_mean , avg(median) as income_median
+from USHouseholdIncome u
+INNER Join USHouseholdIncome_Statistics us
+on u.id = us.id
+where mean <>'0'
+group by Type
+order by 4 DESC
+
+select * 
+from USHouseholdIncome
+where Type = 'Community'
+
+
+--------------------- 选出 大部分居住地 饱和度高的 having count(Type)>100
+select Type, count(Type) as type_total, AVG(mean) as income_mean , avg(median) as income_median
+from USHouseholdIncome u
+INNER Join USHouseholdIncome_Statistics us
+on u.id = us.id
+where mean <>'0'
+group by Type
+having count(Type)>100
+order by 4 DESC
+
+
+
+-------------------EDA 主要看 type level,City level，County level 等 人均家庭单位收入
+
+-- ---------------(只看 city level 均值)
+select top 10 u.state_Name, City, avg(mean) as avg_mean
+from USHouseholdIncome u
+Join USHouseholdIncome_Statistics us
+on u.id = us.id
+group by u.state_Name, City
+having avg(mean)>0
+order by 3 DESC
+
+-- ---------------(只看 city level 均值和中位数)
+select top 10 u.state_Name, City, avg(mean) as avg_mean, avg(median) as income_median
+from USHouseholdIncome u
+Join USHouseholdIncome_Statistics us
+on u.id = us.id
+group by u.state_Name, City
+having avg(mean)>0
+order by 3 DESC
+
+
